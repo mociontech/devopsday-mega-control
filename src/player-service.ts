@@ -1,8 +1,8 @@
 /**
  * Adaptador entre el juego y el registro de participantes (ver GAME-INTEGRATION.md).
  *
- * El juego solo conoce `window.PlayerService` y tres eventos; todo lo demás (base de datos compartida, Evius,
- * reintentos) vive aquí:
+ * El juego solo conoce `window.PlayerService` y tres eventos; todo lo demás (servidor del proyecto, base compartida,
+ * Evius, reintentos) vive fuera del juego:
  *
  *   register({ name, email, phone, company })  → { id, name, email }   registro nuevo
  *   lookup(id)                                  → { id, name }          acceso rápido con un ID existente
@@ -11,7 +11,6 @@
  *   'megacontrol:reset'                                                  vuelve a la bienvenida
  */
 import { Registros, mensajeDe, type DatosRegistro } from "./lib/api";
-import { contactoDe, enviarEvius, recordarContacto, registrarContactoEnEvius } from "./lib/evius";
 import { enqueueResultado } from "./lib/outbox";
 
 interface PlayerServiceAPI {
@@ -48,11 +47,6 @@ export function instalarPlayerService(): void {
       const datos: DatosRegistro = { nombre: name, celular: phone, empresa: company, correo: email };
       try {
         const persona = await Registros.guardar(datos);
-        // Supabase ya confirmó el registro: lo mismo va a Evius en segundo plano (con cola y reintentos).
-        // La participación se envía al terminar la partida, con su puntaje.
-        const contacto = { email, fullName: name, phone, company };
-        recordarContacto(persona.id, contacto);
-        enviarEvius(contacto);
         return { id: persona.id, name: persona.nombre, email };
       } catch (e) {
         throw new Error(mensajeDe(e));
@@ -68,9 +62,6 @@ export function instalarPlayerService(): void {
       }
       if (!persona) throw new Error("No encontramos ese ID. Revísalo e inténtalo de nuevo.");
       if (persona.jugado) throw new Error("Parece que ya participaste en esta experiencia. ¡Gracias!");
-      // La persona ya estaba registrada: se rescata su contacto de la base para mandarla a Evius.
-      // La participación (con el puntaje) se envía al terminar la partida.
-      registrarContactoEnEvius(persona.id, persona.nombre, persona.contacto);
       return { id: persona.id, name: persona.nombre };
     },
   };
@@ -101,8 +92,6 @@ export function instalarPlayerService(): void {
       },
     });
 
-    // A Evius, en paralelo y en segundo plano. El contacto viene del registro (o se rescató de la base al entrar con ID).
-    const contacto = contactoDe(id);
-    if (contacto) enviarEvius(contacto, { score: puntaje, durationMs: Math.round((r.duration - r.timeLeft) * 1000) });
+    // El servidor guarda el resultado en la base y lo manda a Evius (con reintentos): aquí no hace falta nada más.
   });
 }

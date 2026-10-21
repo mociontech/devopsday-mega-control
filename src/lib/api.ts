@@ -1,17 +1,15 @@
 /* Registros (base de datos compartida)
  *
- * Punto único de integración con el backend. Las experiencias del evento hablan con la misma función de servidor:
- * el ID (321-321) lo genera el servidor y sirve en todas. Aquí no hay claves ni tokens.
+ * Punto único del navegador con SU servidor (/api/*, ver server/). La base compartida y Evius las maneja ese servidor:
+ * el ID (321-321) lo genera la base y sirve en todas las experiencias. Aquí no hay claves ni tokens.
  *
  *   guardar(datos)            → { id, nombre }               POST /registrar
  *   buscarPorId(id)           → { id, nombre, jugado } | null GET  /participante/:id
  *   guardarResultado(result)  → void                          POST /participacion (idempotente)
  */
 
-const API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) || "https://jvhxghykvifkggekcdvi.supabase.co/functions/v1/api";
-
-const EXPERIENCIA = "mega" as const;
+// El servidor de este proyecto (server/local.ts, o el middleware de Vite en desarrollo) responde en el mismo origen.
+const API_URL = "/api";
 
 export const MSG_RED = "No hay conexión con el servidor. Revisa internet e inténtalo de nuevo.";
 
@@ -23,8 +21,6 @@ export interface Persona {
 export interface PersonaConsultada extends Persona {
   /** Ya terminó una partida de Mega Control: no puede repetir. */
   jugado: boolean;
-  /** Contacto guardado (solo si aún no completó esta experiencia): sirve para registrarla en Evius. */
-  contacto?: { correo?: string; celular?: string; empresa?: string };
 }
 
 export interface DatosRegistro {
@@ -89,18 +85,15 @@ export const Registros = {
   async guardar(datos: DatosRegistro): Promise<Persona> {
     const huella = JSON.stringify(datos);
     if (!envio || envio.huella !== huella) envio = { huella, idem: crypto.randomUUID() };
-    const r = await pedir<Persona>("/registrar", { ...datos, experiencia: EXPERIENCIA, idem: envio.idem });
+    const r = await pedir<Persona>("/registrar", { ...datos, idem: envio.idem });
     envio = null;
     return { id: r.id, nombre: r.nombre };
   },
 
   async buscarPorId(id: string): Promise<PersonaConsultada | null> {
     try {
-      const r = await pedir<{ id: string; nombre: string; jugado?: boolean; correo?: string; celular?: string; empresa?: string }>(
-        `/participante/${encodeURIComponent(id)}?experiencia=${EXPERIENCIA}`,
-      );
-      const contacto = r.correo ? { correo: r.correo, celular: r.celular, empresa: r.empresa } : undefined;
-      return { id: r.id, nombre: r.nombre, jugado: r.jugado === true, contacto };
+      const r = await pedir<{ id: string; nombre: string; jugado?: boolean }>(`/participante/${encodeURIComponent(id)}`);
+      return { id: r.id, nombre: r.nombre, jugado: r.jugado === true };
     } catch (e) {
       if (e instanceof ErrorApi && e.codigo === "no_encontrado") return null;
       throw e;
@@ -109,7 +102,7 @@ export const Registros = {
 
   /** Idempotente en el servidor: solo cuenta la primera vez, así que reintentar es seguro. */
   async guardarResultado(resultado: Resultado): Promise<void> {
-    await pedir("/participacion", { ...resultado, experiencia: EXPERIENCIA });
+    await pedir("/participacion", resultado);
   },
 };
 

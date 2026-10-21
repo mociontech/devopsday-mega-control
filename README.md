@@ -27,20 +27,39 @@ El juego solo conoce `window.PlayerService` y tres eventos; todo lo demás está
 
 | Del juego | Qué hace la app |
 |---|---|
-| `PlayerService.register({ name, email, phone, company })` | `POST /registrar` (base) y `/attendees` a Evius en segundo plano |
-| `PlayerService.lookup(id)` | `GET /participante/:id?experiencia=mega` |
-| evento `megacontrol:result` | puntaje → `POST /participacion` (con cola local y reintentos) y `/experiences` a Evius |
+| `PlayerService.register({ name, email, phone, company })` | `POST /api/registrar` |
+| `PlayerService.lookup(id)` | `GET /api/participante/:id` |
+| evento `megacontrol:result` | puntaje → `POST /api/participacion` (con cola local y reintentos) |
 
 - **Puntaje:** los puntos del juego (10 por objeto, máx. 130) se escalan a **0–100** (`escalarPuntaje`), para pesar igual
   que las demás experiencias en el ranking global. En `detalles` también viajan: ganó, puntos del juego, objetos y tiempo
   restante. Una partida perdida también guarda lo que se alcanzó a recoger.
-- **Evius** se envía directo desde la app (`src/lib/evius.ts`), en paralelo a la base y con reintentos; el token queda en el
-  código del navegador. Solo se envía si la persona se registró en este equipo (el acceso rápido no devuelve el correo).
-  La persona se registra en Evius al inscribirse y su participación (con el puntaje) al terminar la partida.
-- Variables (`.env`, ver `.env.example`): `VITE_API_URL` y `VITE_EVIUS_*`. En Netlify, cargarlas como variables del sitio.
+- **Una sola partida, un solo puntaje:** el control gigante lo manejan dos personas, pero cuenta como una participación
+  (un ID). El tope es 100 en la app y en la base.
 
-**Requiere** la migración `backend/supabase/migrations/20261021_003_memory_match.sql` y la función `api` redesplegada
-(`registrar_resultado`, marca de "ya jugó"). Sin ellas el registro funciona pero el resultado no se guarda en la base.
+## Servidor propio (`server/`)
+
+Este proyecto es **autónomo**: trae su propio servidor y sus propias variables de entorno. Lo único compartido con las
+otras experiencias es la **base de datos** (Supabase, mismas tablas); el código no se comparte, se replica.
+
+- `server/registros.ts`: todo el acceso a datos (base + Evius). La experiencia (`mega`) es la única línea que cambia entre proyectos.
+- `server/handler.ts`: la API (`POST /api/registrar`, `GET /api/participante/:id`, `POST /api/participacion`).
+- El navegador solo habla con `/api/*` del mismo origen; **las claves nunca llegan al navegador**.
+- El ID (`321-321`) lo genera la base. Un correo ya registrado devuelve el ID de esa persona (no se duplica).
+- El acceso rápido devuelve solo el nombre. El servidor lee el contacto de la base y registra a la persona en Evius
+  (`/attendees` y luego `/experiences`); si Evius falla, queda pendiente en la base y se reintenta con espera creciente.
+- Es una experiencia **local**: `npm start` compila y arranca `server/local.ts`, que sirve la app y `/api/*` en
+  http://127.0.0.1:5503 y reintenta lo pendiente hacia Evius cada 30 s. Requiere Node 22.18 o superior (ejecuta TypeScript directo).
+
+Variables (`.env` local o panel del hosting; ver `.env.example`):
+
+| Variable | Para qué |
+|---|---|
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Base compartida. La clave de servicio (secret key) va **solo** en el servidor. |
+| `EVIUS_MODE` | `live` activa el envío a Evius; con cualquier otro valor no se manda nada. |
+| `EVIUS_URL`, `EVIUS_TOKEN`, `EVIUS_EVENT_ID`, `EVIUS_EXPERIENCE_ID`, `EVIUS_SOURCE` | Evius (Datahub). |
+
+**Requiere** que la migración `backend/supabase/migrations/20261021_003_autonomo.sql` esté aplicada en Supabase.
 
 ## Cambios sobre el juego original
 
@@ -61,5 +80,4 @@ alto; las bases y los objetos conservan sus dimensiones porque `game.js` los rec
 ## Pendientes
 
 - `Pantalla_Final` trae impreso «130 puntos» en la imagen: no cambia con la partida (necesita un diseño con cifra dinámica).
-- El instructivo habla de «juego en pareja»; el juego actual es de un jugador (viene así del equipo del juego).
 - `GAME-README.md` y `GAME-INTEGRATION.md` son los documentos originales del juego (referencia).
