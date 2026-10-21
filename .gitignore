@@ -1,0 +1,8 @@
+.env
+node_modules/
+dist/
+*.local
+
+# Archivos de otros proyectos que se guardan en esta carpeta (no van al repo)
+/Mega Control
+*.zip
