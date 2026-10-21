@@ -162,6 +162,23 @@ async function enviarLote(ruta: string, extra: Record<string, unknown>, records:
   }
 }
 
+/** Detalles de la partida con los nombres que lleva Evius (los de la base están en español). */
+const NOMBRES_EVIUS: Record<string, string> = {
+  intentos: "attempts",
+  duracionMs: "durationMs",
+  parejas: "pairs",
+  gano: "won",
+  puntosJuego: "gamePoints",
+  objetos: "items",
+  tiempoRestanteS: "timeLeftSeconds",
+};
+
+function nombresEvius(detalles: Record<string, unknown> | null): Record<string, unknown> {
+  const r: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(detalles ?? {})) r[NOMBRES_EVIUS[k] ?? k] = v;
+  return r;
+}
+
 interface Pendiente {
   participacion_id: number;
   participante_id: string;
@@ -214,7 +231,14 @@ export async function enviarPendientes(limite = 25): Promise<ResultadoEnvio> {
         await enviarLote(
           "/attendees",
           {},
-          nuevas.map((f) => ({ email: f.correo.toLowerCase(), fullName: f.nombre, phone: f.celular, company: f.empresa })),
+          nuevas.map((f) => ({
+            email: f.correo.toLowerCase(),
+            fullName: f.nombre,
+            phone: f.celular,
+            company: f.empresa,
+            // El ID de la base (321-321): el mismo en todas las experiencias de la persona.
+            participantId: f.participante_id,
+          })),
           `att:${c.eventId}:${await huella(nuevas.map((f) => f.participante_id).sort().join(","))}`,
         );
       } catch (e) {
@@ -224,13 +248,18 @@ export async function enviarPendientes(limite = 25): Promise<ResultadoEnvio> {
     }
 
     // 2) Su participación en esta experiencia.
+    // Todo lo que guarda la base de esta participación. Evius identifica a la persona por el correo y aquí van además su ID
+    // y el de la participación: si hace dos o más experiencias, todas llegan con el mismo correo y participantId.
     const records = filas.map((f) => ({
       email: f.correo.toLowerCase(),
       fullName: f.nombre,
+      participantId: f.participante_id,
+      participationId: f.participacion_id,
+      experience: EXPERIENCIA,
       play_timestamp: f.jugado_en,
       ...(f.puntaje !== null ? { score: f.puntaje } : {}),
       ...(f.lienzo ? { lienzo: f.lienzo } : {}),
-      ...(EXPERIENCIA === "memory" && f.detalles ? { attempts: f.detalles.intentos, durationMs: f.detalles.duracionMs } : {}),
+      ...nombresEvius(f.detalles),
     }));
     try {
       await enviarLote(
