@@ -1,24 +1,30 @@
 /* Registros (base de datos compartida)
  *
- * Punto único de integración con el backend. Las 3 experiencias hablan con la misma función de servidor:
- * el ID (321-321) lo genera el servidor y sirve en las 3. Aquí no hay claves ni tokens.
+ * Punto único de integración con el backend. Las experiencias del evento hablan con la misma función de servidor:
+ * el ID (321-321) lo genera el servidor y sirve en todas. Aquí no hay claves ni tokens.
  *
- *   guardar(datos)           → { id, nombre }          POST /registrar
- *   buscarPorId(id, exp)     → { id, nombre } | null   GET  /participante/:id
- *   actualizar(id, {lienzo}) → true                    POST /participacion
+ *   guardar(datos)            → { id, nombre }               POST /registrar
+ *   buscarPorId(id)           → { id, nombre, jugado } | null GET  /participante/:id
+ *   guardarResultado(result)  → void                          POST /participacion (idempotente)
  */
 
 const API_URL =
   (import.meta.env.VITE_API_URL as string | undefined) || "https://jvhxghykvifkggekcdvi.supabase.co/functions/v1/api";
 
-export const MSG_RED = "No hay conexión con el servidor. Revisa internet e inténtalo de nuevo.";
+const EXPERIENCIA = "mega" as const;
 
-export type ExperienciaApi = "vr" | "laser" | "mega";
+export const MSG_RED = "No hay conexión con el servidor. Revisa internet e inténtalo de nuevo.";
 
 export interface Persona {
   id: string;
   nombre: string;
-  lienzo?: string | null;
+}
+
+export interface PersonaConsultada extends Persona {
+  /** Ya terminó una partida de Mega Control: no puede repetir. */
+  jugado: boolean;
+  /** Contacto guardado (solo si aún no completó esta experiencia): sirve para registrarla en Evius. */
+  contacto?: { correo?: string; celular?: string; empresa?: string };
 }
 
 export interface DatosRegistro {
@@ -26,7 +32,13 @@ export interface DatosRegistro {
   celular: string;
   empresa: string;
   correo: string;
-  experiencia: ExperienciaApi;
+}
+
+export interface Resultado {
+  id: string;
+  /** 0-100, entero (los puntos del juego, escalados). */
+  puntaje: number;
+  detalles: Record<string, number>;
 }
 
 export class ErrorApi extends Error {
@@ -37,8 +49,8 @@ export class ErrorApi extends Error {
   }
 }
 
-// Si el envío se repite (respuesta perdida) se reutiliza la misma clave y el servidor no duplica.
-let envio: { huella: string; idem: string } | null = null;
+/** true si el error es de conexión (vale la pena reintentar); false si el servidor rechazó la solicitud. */
+export const esErrorDeRed = (e: unknown) => e instanceof ErrorApi && (e.codigo === "red" || e.codigo === "interno");
 
 async function pedir<T>(ruta: string, cuerpo?: unknown): Promise<T> {
   const ctl = new AbortController();
@@ -70,30 +82,34 @@ async function pedir<T>(ruta: string, cuerpo?: unknown): Promise<T> {
   return datos as T;
 }
 
+// Si el envío se repite (respuesta perdida) se reutiliza la misma clave y el servidor no duplica.
+let envio: { huella: string; idem: string } | null = null;
+
 export const Registros = {
   async guardar(datos: DatosRegistro): Promise<Persona> {
     const huella = JSON.stringify(datos);
     if (!envio || envio.huella !== huella) envio = { huella, idem: crypto.randomUUID() };
-    const r = await pedir<{ id: string; nombre: string }>("/registrar", { ...datos, idem: envio.idem });
+    const r = await pedir<Persona>("/registrar", { ...datos, experiencia: EXPERIENCIA, idem: envio.idem });
     envio = null;
     return { id: r.id, nombre: r.nombre };
   },
 
-  async buscarPorId(id: string, experiencia: ExperienciaApi): Promise<Persona | null> {
+  async buscarPorId(id: string): Promise<PersonaConsultada | null> {
     try {
-      const r = await pedir<{ id: string; nombre: string; lienzo: string | null }>(
-        `/participante/${encodeURIComponent(id)}?experiencia=${encodeURIComponent(experiencia)}`,
+      const r = await pedir<{ id: string; nombre: string; jugado?: boolean; correo?: string; celular?: string; empresa?: string }>(
+        `/participante/${encodeURIComponent(id)}?experiencia=${EXPERIENCIA}`,
       );
-      return { id: r.id, nombre: r.nombre, lienzo: r.lienzo };
+      const contacto = r.correo ? { correo: r.correo, celular: r.celular, empresa: r.empresa } : undefined;
+      return { id: r.id, nombre: r.nombre, jugado: r.jugado === true, contacto };
     } catch (e) {
       if (e instanceof ErrorApi && e.codigo === "no_encontrado") return null;
       throw e;
     }
   },
 
-  async actualizar(id: string, { lienzo }: { lienzo: string }): Promise<true> {
-    await pedir("/participacion", { id, experiencia: "laser", lienzo });
-    return true;
+  /** Idempotente en el servidor: solo cuenta la primera vez, así que reintentar es seguro. */
+  async guardarResultado(resultado: Resultado): Promise<void> {
+    await pedir("/participacion", { ...resultado, experiencia: EXPERIENCIA });
   },
 };
 

@@ -188,3 +188,22 @@ export function iniciarEnvioEvius(): () => void {
     clearInterval(intervalo);
   };
 }
+
+
+/** Contacto que devuelve el servidor en el acceso rápido (la persona ya se registró en otra experiencia o equipo). */
+export interface ContactoServidor {
+  correo?: string;
+  celular?: string;
+  empresa?: string;
+}
+
+/**
+ * Acceso rápido por ID: rescata el contacto guardado en la base para poder registrar a la persona en Evius, que la
+ * identifica por correo. Queda solo en memoria. Si ya completó esta experiencia el servidor no lo devuelve y no se hace nada.
+ */
+export function registrarContactoEnEvius(id: string, nombre: string, contacto: ContactoServidor | undefined, participacion?: Participacion): void {
+  if (!contacto?.correo) return;
+  const c: Contacto = { email: contacto.correo, fullName: nombre, phone: contacto.celular ?? "", company: contacto.empresa ?? "" };
+  recordarContacto(id, c);
+  enviarEvius(c, participacion);
+}

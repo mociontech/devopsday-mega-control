@@ -1,18 +1,96 @@
 <!doctype html>
 <html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Registro · Mega Control · DevOps Days Bogotá 2026</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Figtree:wght@800&family=Inter:wght@400;700&family=Montserrat:wght@700;800&family=Poppins:wght@400&family=Roboto:wght@400;700&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mega Control · DevOps Days Bogotá 2026</title>
+  <!-- El juego son scripts clásicos servidos tal cual desde public/game; la conexión con la base de datos y con
+       Evius vive en src/ (módulos) y se engancha por window.PlayerService y los eventos megacontrol:*. -->
+  <script defer src="/game/physics.js"></script>
+  <script defer src="/game/game.js"></script>
+  <script type="module" src="/src/main.ts"></script>
+  <script defer src="/game/journey.js"></script>
+</head>
+<body>
+  <main>
+    <section id="welcome" class="journey-screen" aria-label="Bienvenida">
+      <div class="screen-art">
+        <img src="/images/Pantalla_Bienvenida.webp" alt="Mocion · Mega control · DevOpsDays Bogotá 2026" draggable="false">
+        <button id="welcome-next" class="hotspot welcome-button" aria-label="Registrarme ahora"></button>
+      </div>
+    </section>
+    <section id="registration" class="journey-screen" aria-label="Registro" hidden>
+      <!-- Registro de 4 campos (diseño de Figma). Las medidas están en píxeles de un lienzo de 1920×1080 y se
+           escalan con --u, así que siguen la pantalla igual que las imágenes de las demás pantallas. -->
+      <form id="registration-form" class="screen-art registro" autocomplete="off">
+        <img class="reg-box" style="--x:1085;--y:827;--w:1426;--h:1426" src="/assets/blob-right.svg" alt="" draggable="false">
+        <img class="reg-box reg-blob-left" style="--x:-75.5;--y:-755.5;--w:1047;--h:1044" src="/assets/blob-left.svg" alt="" draggable="false">
+        <img class="reg-box" style="--x:101;--y:61;--w:147;--h:43.4" src="/assets/menu-icon.svg" alt="" draggable="false">
+        <img class="reg-box" style="--x:1110;--y:61;--w:723.6;--h:153.6" src="/assets/header-dark.svg" alt="Mocion · DevOps Days Bogotá 2026" draggable="false">
+        <h1 class="reg-box reg-title" style="--x:519;--y:355;--w:882;--h:78">REGISTRO</h1>
+
+        <label class="reg-box reg-field" style="--x:235;--y:471;--w:673;--h:99">
+          <img class="reg-icon" style="--x:61;--y:30;--w:25.7;--h:38" src="/assets/icon-person.svg" alt="" draggable="false">
+          <input id="player-name" class="reg-input" name="name" aria-label="Nombre" placeholder="Nombre" autocomplete="off" spellcheck="false" maxlength="80" required>
+        </label>
+        <label class="reg-box reg-field" style="--x:955;--y:471;--w:673;--h:99">
+          <input id="player-phone" class="reg-input" name="phone" type="tel" inputmode="numeric" aria-label="Celular" placeholder="Celular" autocomplete="off" maxlength="10" required>
+        </label>
+        <label class="reg-box reg-field" style="--x:235;--y:599;--w:673;--h:99">
+          <input id="player-company" class="reg-input" name="company" aria-label="Empresa" placeholder="Empresa" autocomplete="off" spellcheck="false" maxlength="80" required>
+        </label>
+        <label class="reg-box reg-field" style="--x:955;--y:599;--w:673;--h:99">
+          <img class="reg-icon" style="--x:49;--y:30;--w:50;--h:38.4" src="/assets/icon-mail.svg" alt="" draggable="false">
+          <input id="player-email" class="reg-input" name="email" type="email" aria-label="Correo" placeholder="Correo" autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="120" required>
+        </label>
+
+        <p class="form-error" role="alert" hidden></p>
+        <button class="reg-box reg-submit register-submit" style="--x:621;--y:772;--w:678;--h:123.8" type="submit">Comenzar</button>
+        <button id="existing-id" class="reg-box reg-link" style="--x:664;--y:915;--w:593;--h:88" type="button">digitar ID código</button>
+      </form>
+    </section>
+    <section id="your-id" class="journey-screen" aria-label="Tu ID" hidden>
+      <div class="screen-art">
+        <img src="/images/Tu_ID.webp" alt="Tu ID único. Guarda tu código personal." draggable="false">
+        <output id="assigned-id-first" class="id-value id-first">321</output>
+        <output id="assigned-id-last" class="id-value id-last">321</output>
+        <button id="id-next" class="hotspot your-id-submit" aria-label="Comenzar"></button>
+        <button class="hotspot back-button" data-back aria-label="Volver al registro"></button>
+      </div>
+    </section>
+    <section id="enter-id" class="journey-screen" aria-label="Ingresar ID" hidden>
+      <form id="id-form" class="screen-art" autocomplete="off">
+        <img src="/images/Ingresar_ID.webp" alt="Agrega ID" draggable="false">
+        <input id="id-first" class="id-input id-first" aria-label="Primeros tres dígitos del ID" inputmode="numeric" pattern="[0-9]{3}" minlength="3" maxlength="3" autocomplete="off" spellcheck="false" required placeholder=" ">
+        <input id="id-last" class="id-input id-last" aria-label="Últimos tres dígitos del ID" inputmode="numeric" pattern="[0-9]{3}" minlength="3" maxlength="3" autocomplete="off" spellcheck="false" required placeholder=" ">
+        <button class="hotspot enter-id-submit" type="submit" aria-label="Comenzar"></button>
+        <button class="hotspot back-button" type="button" data-back aria-label="Volver al registro"></button>
+        <p class="form-error" role="alert" hidden></p>
+      </form>
+    </section>
+    <section id="instructions" class="journey-screen" aria-label="Instrucciones" hidden>
+      <div class="screen-art">
+        <img src="/images/Instrucciones.webp" alt="Instructivo. Luchen y sobrevivan en pareja. Un jugador avanza y el otro salta y esquiva. Su objetivo es sincronizar sus movimientos para recolectar los objetivos." draggable="false">
+        <button id="start-game" class="hotspot continue-button" aria-label="Iniciar"></button>
+      </div>
+    </section>
+    <section id="play" class="game" aria-label="Juego de plataformas horizontal" tabindex="-1" hidden>
+      <canvas id="game" width="1280" height="720" aria-label="Mueve al robot con las flechas y salta con espacio para llegar a la meta."></canvas>
+      <span id="status" class="sr-only" role="status">Cargando imágenes…</span>
+    <div class="touch" aria-label="Controles táctiles"><button data-action="left" aria-label="Mover a la izquierda">←</button><button data-action="right" aria-label="Mover a la derecha">→</button><button id="restart" aria-label="Reiniciar">↻</button><button data-action="jump" aria-label="Saltar">↑</button></div>
+    </section>
+    <section id="won" class="journey-screen result-screen" aria-label="Ganaste" tabindex="-1" hidden>
+      <div class="screen-art"><img src="/images/Ganaste.webp" alt="¡Ganaste!" draggable="false"></div>
+    </section>
+    <section id="lost" class="journey-screen result-screen" aria-label="Perdiste" tabindex="-1" hidden>
+      <div class="screen-art"><img src="/images/Perdiste.webp" alt="¡Perdiste!" draggable="false"></div>
+    </section>
+    <section id="final" class="journey-screen result-screen" aria-label="Pantalla final" tabindex="-1" hidden>
+      <div class="screen-art"><img src="/images/Pantalla_Final.webp" alt="Obtuviste 130 puntos" draggable="false"></div>
+    </section>
+    <section id="thanks" class="journey-screen" aria-label="Gracias por participar. Presiona cualquier tecla para volver al inicio." tabindex="-1" hidden>
+      <div class="screen-art"><img src="/images/GraciasPorParticipar.webp" alt="¡Gracias por participar!" draggable="false"></div>
+    </section>
+  </main>
+</body>
 </html>

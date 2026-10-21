@@ -1,271 +1,63 @@
-:root {
-  --ink: #1e1e1e;
-  --paper: #efefef;
-  --pink: #ff006a;
-  --placeholder: #a4a4a4;
-  --code: #232e2e;
-  --error: #c4003f;
-
-  --font-display: "Figtree", "Proxima Nova", "Montserrat", system-ui, sans-serif;
-  --font-hero: "Montserrat", system-ui, sans-serif;
-  --font-body: "Inter", system-ui, sans-serif;
-  --font-code: "Roboto", system-ui, sans-serif;
-}
-
+:root { font-family: system-ui, sans-serif; background: #bdd3f6; }
 * { box-sizing: border-box; }
-
-html, body {
-  margin: 0;
-  height: 100%;
-  background: var(--ink);
-  overflow: hidden;
+[hidden] { display: none !important; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+main, .game { position: absolute; inset: 0; }
+canvas { display: block; width: 100%; height: 100%; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#status.error { position: absolute; top: 20px; left: 20px; right: 20px; padding: 12px; background: #fff; color: #702020; }
+.touch { display: none; }
+button { font: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid #167e95; outline-offset: 3px; }
+.journey-screen { position: absolute; inset: 0; display: grid; place-items: center; background: #efefef; }
+#instructions { background: #ff007c; }
+.screen-art { position: relative; width: min(100vw, 177.777778vh); aspect-ratio: 16 / 9; margin: 0; container-type: inline-size; }
+.screen-art img { display: block; width: 100%; height: 100%; user-select: none; }
+.hotspot { position: absolute; border: 0; padding: 0; background: transparent; border-radius: 999px; }
+.welcome-button { left: 31.98%; top: 69.81%; width: 36.10%; height: 12.32%; border-radius: 24px; }
+.continue-button { left: 32.34%; top: 76.57%; width: 35.32%; height: 11.48%; }
+.result-screen { background: #bdd3f6; outline: none; }
+#play:focus { outline: none; }
+.registration-input, .id-input { position: absolute; border: 0; border-radius: 0; outline: none; box-shadow: none; background: transparent; color: #202020; font-family: Arial, sans-serif; }
+.registration-input { left: 34.3%; width: 37%; height: 7.2%; padding: 0 0.3%; font-size: 2.08cqw; }
+.name-input { top: 44.55%; }
+.email-input { top: 57.25%; }
+.registration-input:focus, .registration-input:not(:placeholder-shown), .id-input:focus, .id-input:not(:placeholder-shown), .id-value { background: #f1f1f1; }
+.register-submit { left: 32.34%; top: 71.48%; width: 35.32%; height: 11.48%; }
+.existing-id { left: 39%; top: 86%; width: 22%; height: 6%; border-radius: 0; }
+.id-input, .id-value { position: absolute; width: 15%; height: 11%; font: bold 4.8cqw Arial, sans-serif; text-align: center; color: #9da2a2; padding: 0; }
+.id-input { top: 49%; }
+.id-value { top: 57%; display: grid; place-items: center; }
+.id-first { left: 32.5%; }
+.id-last { left: 52.5%; }
+.your-id-submit { left: 32.7%; top: 77.7%; width: 35.63%; height: 12.4%; }
+.enter-id-submit { left: 32.7%; top: 70.37%; width: 35.63%; height: 12.4%; }
+.back-button { left: 88.5%; top: 84%; width: 8.5%; height: 10%; border-radius: 0; }
+.form-error { position: absolute; left: 28%; top: 65.5%; width: 44%; margin: 0; text-align: center; color: #a40032; font-size: 1.2cqw; }
+#id-form .form-error { top: 63%; }
+#thanks:focus { outline: none; }
+.hotspot:disabled { cursor: wait; }
+@media (any-pointer: coarse) {
+  .touch { position: absolute; left: max(16px, env(safe-area-inset-left)); right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); display: flex; gap: 12px; pointer-events: none; }
+  .touch button { width: 56px; height: 56px; border-radius: 50%; border: 1px solid #ffffff80; color: #163b54; background: #ffffff55; font-size: 28px; touch-action: none; user-select: none; pointer-events: auto; }
+  .touch button:active { background: #ffffffbb; }
+  #restart { margin-left: auto; }
 }
 
-button, input, output { font: inherit; color: inherit; }
-button { border: 0; background: none; padding: 0; cursor: pointer; }
-
-/* Escenario fijo 1920×1080 escalado al viewport (--s lo fija app.js). */
-.stage {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 1920px;
-  height: 1080px;
-  transform: translate(-50%, -50%) scale(var(--s, 1));
-  transform-origin: center;
-  overflow: hidden;
-  background: var(--paper);
-}
-
-.screen {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  background: var(--paper);
-  color: var(--ink);
-  animation: enter .28s ease-out;
-}
-.screen--pink { background: var(--pink); }
-@keyframes enter { from { opacity: 0; } to { opacity: 1; } }
-
-.abs { position: absolute; display: block; max-width: none; }
-.layer { position: absolute; inset: 0; pointer-events: none; }
-.bg-hero { inset: 0; width: 100%; height: 100%; object-fit: cover; }
-
-/* Blob superior izquierdo: el asset viene rotado -90° en Figma. */
-.blob-left {
-  left: -75.5px;
-  top: -755.5px;
-  width: 1047px;
-  height: 1044px;
-  transform: rotate(-90deg);
-}
-
-.art > img {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  max-width: none;
-  transform: translate(-50%, -50%) rotate(var(--r, 0deg));
-}
-
-.diamond { mix-blend-mode: difference; transform: rotate(-45deg); }
-
-/* ---------- Tipografía ---------- */
-.title {
-  position: absolute;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  font-family: var(--font-display);
-  font-weight: 800;
-  line-height: normal;
-  color: var(--ink);
-}
-.title--97 { font-size: 97px; }
-.title--140 { font-size: 140px; }
-
-.hero-word {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-hero);
-  font-weight: 800;
-  font-size: 211.07px;
-  line-height: 170.72px;
-  color: var(--ink);
-  white-space: nowrap;
-}
-
-.lead {
-  position: absolute;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
-  font-family: var(--font-body);
-  font-size: 48.75px;
-  color: var(--ink);
-}
-.lead strong { font-weight: 700; line-height: 73px; }
-.lead span { font-weight: 400; }
-.lead--id { color: #333; }
-.lead--id span { line-height: 58px; }
-.lead--instructivo span { line-height: 63px; }
-
-/* ---------- Botones ---------- */
-.btn {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  transition: transform .12s ease, filter .12s ease;
-}
-.btn:active { transform: scale(.97); }
-.btn:disabled { opacity: .6; cursor: progress; }
-.btn:focus-visible, .link-btn:focus-visible, .back:focus-visible, .lienzo:focus-visible {
-  outline: 4px solid #00d7d7;
-  outline-offset: 6px;
-}
-.btn--pink {
-  background: var(--pink);
-  border-radius: 24px;
-  color: #fff;
-  font-family: var(--font-hero);
-  font-weight: 700;
-  font-size: 50px;
-}
-.btn--dark {
-  background: var(--ink);
-  color: #fff;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 65px;
-}
-.btn--pill { border-radius: 66.5px; }
-
-.link-btn {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-code);
-  font-weight: 400;
-  font-size: 54px;
-  color: var(--code);
-  text-decoration: underline;
-  text-underline-offset: 6px;
-}
-
-.back { position: absolute; width: 134px; height: 85px; padding: 0; }
-.back img { display: block; width: 100%; height: 100%; transform: rotate(180deg); }
-
-/* ---------- Marca ---------- */
-.brand { position: absolute; }
-.brand__rule { position: absolute; width: 2.26px; background: #000; }
-
-.social { position: absolute; width: 540px; height: 36px; }
-.social img { position: absolute; left: 0; top: 0; }
-.social__link {
-  position: absolute;
-  left: 228px;
-  top: 0;
-  width: 280px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: "Poppins", system-ui, sans-serif;
-  font-size: 39px;
-  line-height: 56px;
-  color: var(--ink);
-  text-decoration: underline;
-}
-
-/* ---------- Campos de registro ---------- */
-.field {
-  position: absolute;
-  display: block;
-  width: 673px;
-  height: 99px;
-  border: 1.5px solid var(--ink);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, .15);
-  transition: box-shadow .12s ease, border-color .12s ease;
-}
-.field:focus-within { box-shadow: 0 0 0 4px rgba(0, 215, 215, .55); }
-.field input {
-  width: 100%;
-  height: 100%;
-  padding: 0 24px 0 130.5px;
-  border: 0;
-  background: transparent;
-  border-radius: 24px;
-  outline: none;
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 40px;
-  color: var(--ink);
-}
-.field input::placeholder { color: var(--placeholder); opacity: 1; }
-.field__icon { position: absolute; display: block; pointer-events: none; }
-.field.is-invalid { border-color: var(--error); }
-
-.form-error {
-  position: absolute;
-  margin: 0;
-  height: 40px;
-  font-family: var(--font-body);
-  font-size: 28px;
-  line-height: 40px;
-  color: var(--error);
-  text-align: center;
-}
-
-/* ---------- Código de ID (321-321) ---------- */
-.id-code { position: absolute; display: flex; align-items: center; width: 704px; }
-.id-box {
-  width: 320px;
-  height: 154px;
-  border: 1.5px solid var(--ink);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, .15);
-  text-align: center;
-  font-family: var(--font-code);
-  font-weight: 700;
-  font-size: 95px;
-  line-height: 150px;
-  color: var(--code);
-  outline: none;
-  display: block;
-  padding: 0;
-}
-.id-box::placeholder { color: var(--code); opacity: .4; }
-.id-box:focus { box-shadow: 0 0 0 4px rgba(0, 215, 215, .55); }
-.id-box.is-invalid { border-color: var(--error); }
-.id-dash {
-  width: 64px;
-  flex: none;
-  text-align: center;
-  font-family: var(--font-code);
-  font-weight: 700;
-  font-size: 95px;
-  color: var(--code);
-  opacity: .4;
-}
-.id-box--value { letter-spacing: .04em; }
-
-/* ---------- Lienzos ---------- */
-.lienzo {
-  position: absolute;
-  border-radius: 6px;
-  transition: transform .12s ease, box-shadow .12s ease;
-}
-.lienzo img { display: block; width: 100%; height: 100%; }
-.lienzo:active { transform: scale(.97); }
-.lienzo[aria-checked="true"] { box-shadow: 0 0 0 6px var(--pink); }
+/* ---------- Registro de 4 campos (diseño de Figma, lienzo de 1920×1080) ---------- */
+/* --u = 1 px del diseño. Los hijos llevan sus medidas en --x/--y/--w/--h (px del diseño). */
+.registro { --u: calc(100cqw / 1920); background: #efefef; overflow: hidden; }
+.registro .reg-box { position: absolute; left: calc(var(--x) * var(--u)); top: calc(var(--y) * var(--u)); width: calc(var(--w) * var(--u)); height: calc(var(--h) * var(--u)); max-width: none; margin: 0; user-select: none; }
+/* El asset de la forma superior izquierda viene rotado -90° en Figma. */
+.registro .reg-blob-left { transform: rotate(-90deg); }
+.reg-title { display: flex; align-items: center; justify-content: center; font-family: 'Figtree', 'Inter', system-ui, sans-serif; font-weight: 800; font-size: calc(97 * var(--u)); line-height: normal; color: #1e1e1e; }
+.reg-field { border: calc(1.5 * var(--u)) solid #1e1e1e; border-radius: calc(24 * var(--u)); background: rgba(255, 255, 255, .15); transition: box-shadow .12s ease; }
+.reg-field:focus-within { box-shadow: 0 0 0 calc(4 * var(--u)) rgba(0, 215, 215, .55); }
+.reg-field:has(.reg-input:user-invalid) { border-color: #c4003f; }
+.registro .reg-icon { position: absolute; left: calc(var(--x) * var(--u)); top: calc(var(--y) * var(--u)); width: calc(var(--w) * var(--u)); height: calc(var(--h) * var(--u)); pointer-events: none; }
+.reg-input { width: 100%; height: 100%; padding: 0 calc(24 * var(--u)) 0 calc(130.5 * var(--u)); border: 0; border-radius: inherit; background: transparent; outline: none; font-family: 'Inter', system-ui, sans-serif; font-weight: 400; font-size: calc(40 * var(--u)); color: #1e1e1e; }
+.reg-input::placeholder { color: #a4a4a4; opacity: 1; }
+.registro .form-error { left: calc(235 * var(--u)); top: calc(710 * var(--u)); width: calc(1393 * var(--u)); font-size: calc(28 * var(--u)); line-height: 1.4; }
+.reg-submit { display: flex; align-items: center; justify-content: center; border: 0; padding: 0; border-radius: calc(66.5 * var(--u)); background: #1e1e1e; color: #fff; font-family: 'Figtree', 'Inter', system-ui, sans-serif; font-weight: 800; font-size: calc(65 * var(--u)); }
+.reg-submit:disabled { opacity: .6; }
+.reg-link { border: 0; padding: 0; background: transparent; font-family: 'Roboto', system-ui, sans-serif; font-weight: 400; font-size: calc(54 * var(--u)); color: #232e2e; text-decoration: underline; text-underline-offset: calc(6 * var(--u)); }
