@@ -76,9 +76,12 @@ export function instalarPlayerService(): void {
 
   document.addEventListener("megacontrol:result", (event) => {
     const r = (event as CustomEvent<ResultadoJuego>).detail;
+    const puntaje = escalarPuntaje(r.score, r.maxScore);
+    // Pantalla final: el mismo puntaje que se guarda (la imagen trae un "130 puntos" fijo que la pantalla tapa).
+    const marcador = document.getElementById("final-score");
+    if (marcador) marcador.textContent = `${puntaje} ${puntaje === 1 ? "punto" : "puntos"}`;
     if (!jugador) return;
     const { id } = jugador;
-    const puntaje = escalarPuntaje(r.score, r.maxScore);
 
     // A la base: se guarda local primero y se reintenta; idempotente en el servidor.
     enqueueResultado({

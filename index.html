@@ -86,7 +86,11 @@
       <div class="screen-art"><img src="/images/Perdiste.webp" alt="¡Perdiste!" draggable="false"></div>
     </section>
     <section id="final" class="journey-screen result-screen" aria-label="Pantalla final" tabindex="-1" hidden>
-      <div class="screen-art"><img src="/images/Pantalla_Final.webp" alt="Obtuviste 130 puntos" draggable="false"></div>
+      <div class="screen-art">
+        <img src="/images/Pantalla_Final.webp" alt="Pantalla final" draggable="false">
+        <!-- La imagen trae pintado "130 puntos": este bloque lo tapa con el color de la tarjeta y muestra el puntaje real. -->
+        <p class="final-score" aria-live="polite"><span class="final-score-title">Obtuviste</span><span id="final-score">0 puntos</span></p>
+      </div>
     </section>
     <section id="thanks" class="journey-screen" aria-label="Gracias por participar. Presiona cualquier tecla para volver al inicio." tabindex="-1" hidden>
       <div class="screen-art"><img src="/images/GraciasPorParticipar.webp" alt="¡Gracias por participar!" draggable="false"></div>

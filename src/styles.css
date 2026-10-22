@@ -61,3 +61,9 @@ button:focus-visible { outline: 3px solid #167e95; outline-offset: 3px; }
 .reg-submit { display: flex; align-items: center; justify-content: center; border: 0; padding: 0; border-radius: calc(66.5 * var(--u)); background: #1e1e1e; color: #fff; font-family: 'Figtree', 'Inter', system-ui, sans-serif; font-weight: 800; font-size: calc(65 * var(--u)); }
 .reg-submit:disabled { opacity: .6; }
 .reg-link { border: 0; padding: 0; background: transparent; font-family: 'Roboto', system-ui, sans-serif; font-weight: 400; font-size: calc(54 * var(--u)); color: #232e2e; text-decoration: underline; text-underline-offset: calc(6 * var(--u)); }
+
+/* Pantalla final: tapa el "130 puntos" pintado en la imagen (tarjeta rosa de 1080-1695 × 555-790 px en 1920×1080) y
+   escribe el puntaje real. Medidas en cqw (1px de la imagen = 100/1920 cqw). */
+.final-score { position: absolute; left: 58.333cqw; top: 30.729cqw; width: 27.865cqw; height: 9.479cqw; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ff006b; color: #fff; font-family: "Figtree", "Inter", system-ui, sans-serif; font-size: 4.7cqw; line-height: 1; text-align: center; }
+.final-score-title { font-weight: 800; }
+.final-score #final-score { font-weight: 500; }

@@ -5,6 +5,10 @@
   const ctx = canvas.getContext('2d');
   const status = document.querySelector('#status');
   const state = createState();
+  // El puntaje que ve la persona es el que se guarda en la base y en Evius: los puntos del juego (10 por objeto, 130 con
+  // todos) escalados a 0-100. Misma fórmula que escalarPuntaje() en src/player-service.ts.
+  const MAX_POINTS = collectibles.length * CONFIG.itemPoints;
+  const shown = points => (MAX_POINTS > 0 ? Math.round(Math.min(100, Math.max(0, points / MAX_POINTS * 100))) : 0);
   function resize() {
     // Adapta el campo de visión sin deformar las imágenes.
     CONFIG.width = CONFIG.height * window.innerWidth / window.innerHeight;
@@ -93,11 +97,12 @@
       ctx.font = 'bold 24px system-ui'; ctx.textAlign = 'center';
       ctx.lineWidth = 4; ctx.strokeStyle = '#fff'; ctx.fillStyle = '#e90078';
       const y = state.y - h - 15 - (0.7 - state.pickupFlash) * 35;
-      ctx.strokeText('+' + CONFIG.itemPoints, state.x, y); ctx.fillText('+' + CONFIG.itemPoints, state.x, y); ctx.restore();
+      const gained = '+' + (shown(state.score) - shown(state.score - CONFIG.itemPoints));
+      ctx.strokeText(gained, state.x, y); ctx.fillText(gained, state.x, y); ctx.restore();
     }
     ctx.restore();
     drawHud();
-    const message = state.won ? '¡Ganaste!' : state.lost ? '¡Perdiste!' : `Puntos: ${state.score}. Objetos: ${state.collected.length} de ${collectibles.length}. Tiempo: ${Math.ceil(state.timeLeft)} segundos.`;
+    const message = state.won ? '¡Ganaste!' : state.lost ? '¡Perdiste!' : `Puntos: ${shown(state.score)}. Objetos: ${state.collected.length} de ${collectibles.length}. Tiempo: ${Math.ceil(state.timeLeft)} segundos.`;
     if (status.textContent !== message) status.textContent = message;
   }
   function drawGoal() {
@@ -142,7 +147,7 @@
     const width = CONFIG.width / scale;
     ctx.fillStyle = '#ffffffbd'; ctx.beginPath(); ctx.roundRect(24, 28, 245, 76, 18); ctx.fill();
     ctx.textAlign = 'left'; ctx.fillStyle = '#173b63'; ctx.font = 'bold 27px system-ui';
-    ctx.fillText(state.score + ' puntos', 42, 61);
+    ctx.fillText(shown(state.score) + ' puntos', 42, 61);
     ctx.font = '16px system-ui'; ctx.fillText(`${state.collected.length} / ${collectibles.length} objetos`, 42, 87);
     ctx.drawImage(images.timer, width - 284, 16, 260, 96.2);
     const seconds = Math.ceil(state.timeLeft);
