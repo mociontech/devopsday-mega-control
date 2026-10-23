@@ -65,15 +65,19 @@ export interface DatosRegistro {
 export interface PersonaRegistrada {
   id: string;
   nombre: string;
-  /** Ya completó esta experiencia. */
+  /** Ya no le quedan intentos en esta experiencia. */
   jugado: boolean;
+  /** Intentos que le quedan (Mega Control: 3 en total; las demás experiencias: 1). */
+  intentosRestantes: number;
+  /** Su mejor puntaje hasta ahora, o null si aún no ha jugado. */
+  mejor: number | null;
   /** El correo ya estaba registrado: se devolvió el ID de esa persona. */
   existente: boolean;
   usados?: number;
 }
 
 export async function registrar(d: DatosRegistro): Promise<PersonaRegistrada> {
-  const r = await rpc<{ id: string; nombre: string; jugado: boolean; repetido: boolean; usados?: number }>("registrar_participante", {
+  const r = await rpc<{ id: string; nombre: string; jugado: boolean; intentosRestantes?: number; mejor?: number | null; repetido: boolean; usados?: number }>("registrar_participante", {
     p_nombre: d.nombre,
     p_celular: d.celular,
     p_empresa: d.empresa,
@@ -81,22 +85,27 @@ export async function registrar(d: DatosRegistro): Promise<PersonaRegistrada> {
     p_experiencia: EXPERIENCIA,
     p_idem: d.idem,
   });
-  return { id: r.id, nombre: r.nombre, jugado: r.jugado === true, existente: r.repetido === true, usados: r.usados };
+  return {
+    id: r.id, nombre: r.nombre, jugado: r.jugado === true, intentosRestantes: r.intentosRestantes ?? 1, mejor: r.mejor ?? null,
+    existente: r.repetido === true, usados: r.usados,
+  };
 }
 
 export interface PersonaConsultada {
   nombre: string;
   lienzo: string | null;
   jugado: boolean;
+  intentosRestantes: number;
+  mejor: number | null;
 }
 
 /** Acceso rápido: solo lo mínimo para entrar. Deja registrada la participación. null si el ID no existe. */
 export async function entrar(id: string): Promise<PersonaConsultada | null> {
-  const r = await rpc<{ nombre: string; lienzo: string | null; jugado: boolean } | null>("entrar_participante", {
+  const r = await rpc<{ nombre: string; lienzo: string | null; jugado: boolean; intentosRestantes?: number; mejor?: number | null } | null>("entrar_participante", {
     p_id: id,
     p_experiencia: EXPERIENCIA,
   });
-  return r ? { nombre: r.nombre, lienzo: r.lienzo ?? null, jugado: r.jugado === true } : null;
+  return r ? { nombre: r.nombre, lienzo: r.lienzo ?? null, jugado: r.jugado === true, intentosRestantes: r.intentosRestantes ?? 1, mejor: r.mejor ?? null } : null;
 }
 
 /** Láser Grafiti: guarda el lienzo elegido. false si la persona no tiene participación. */
@@ -104,15 +113,21 @@ export async function guardarLienzo(id: string, lienzo: string): Promise<boolean
   return (await rpc<boolean>("actualizar_lienzo", { p_id: id, p_lienzo: lienzo })) === true;
 }
 
-/** Resultado final (0-100). Solo cuenta la primera vez. null si la persona no existe. */
-export async function guardarResultado(id: string, puntaje: number, detalles: Record<string, number>): Promise<{ guardado: boolean } | null> {
-  const r = await rpc<{ guardado: boolean } | null>("registrar_resultado", {
+/**
+ * Guarda una partida (0-100). Cuenta como un intento y deja el MEJOR puntaje. `clave` identifica la partida: si el mismo
+ * envío se repite (respuesta perdida) no gasta otro intento. null si la persona no existe.
+ */
+export async function guardarResultado(
+  id: string, puntaje: number, detalles: Record<string, number>, clave?: string,
+): Promise<{ guardado: boolean; intentosRestantes: number; mejor: number | null } | null> {
+  const r = await rpc<{ guardado: boolean; intentosRestantes?: number; mejor?: number | null } | null>("registrar_resultado", {
     p_id: id,
     p_experiencia: EXPERIENCIA,
     p_puntaje: puntaje,
     p_detalles: detalles,
+    p_clave: clave ?? null,
   });
-  return r ? { guardado: r.guardado === true } : null;
+  return r ? { guardado: r.guardado === true, intentosRestantes: r.intentosRestantes ?? 0, mejor: r.mejor ?? null } : null;
 }
 
 /* ------------------------------------------------------------------ */

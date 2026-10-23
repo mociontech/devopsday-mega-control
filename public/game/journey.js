@@ -3,6 +3,7 @@
   const screens = ['welcome', 'registration', 'your-id', 'enter-id', 'instructions', 'play', 'won', 'lost', 'final', 'thanks'];
   const RESULT_DURATION_MS = 3000;
   const FINAL_DURATION_MS = 3000;
+  const RETRY_WAIT_MS = 25000; // sin tocar nada con intentos disponibles, se da por terminado
   let currentScreen = 'welcome';
   let resultTimer;
   let screenVersion = 0;
@@ -14,6 +15,7 @@
     screenVersion++;
     currentScreen = id;
     for (const screen of screens) document.getElementById(screen).hidden = screen !== id;
+    if (id !== 'final') document.querySelector('#retry').hidden = true;
     document.querySelector(focusTarget).focus({ preventScroll: true });
   }
   document.querySelector('#welcome-next').addEventListener('click', () => show('registration', '#player-name'));
@@ -78,12 +80,45 @@
     show('play', '#play');
     document.dispatchEvent(new CustomEvent('megacontrol:start', { detail: { player } }));
   });
+  const retry = document.querySelector('#retry');
+  const retryInfo = document.querySelector('#retry-info');
+  const retryPlay = document.querySelector('#retry-play');
+  const retryFinish = document.querySelector('#retry-finish');
+  const intentos = () => (window.PlayerService && window.PlayerService.intentos ? window.PlayerService.intentos() : { restantes: 0, mejor: null });
+  const retryVisible = () => currentScreen === 'final' && !retry.hidden;
+  function playAgain() {
+    if (!retryVisible()) return;
+    show('play', '#play');
+    document.dispatchEvent(new CustomEvent('megacontrol:start', { detail: { player } }));
+  }
+  function finishNow() {
+    if (!retryVisible()) return;
+    show('thanks', '#thanks');
+  }
+  retryPlay.addEventListener('click', playAgain);
+  retryFinish.addEventListener('click', finishNow);
+  // Teclado (el equipo juega con teclado): Enter o Espacio = jugar de nuevo; Escape = terminar.
+  window.addEventListener('keydown', event => {
+    if (!retryVisible() || event.repeat) return;
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); playAgain(); }
+    else if (event.key === 'Escape') { event.preventDefault(); finishNow(); }
+  });
   document.addEventListener('megacontrol:finish', event => {
     if (currentScreen !== 'play' || !['won', 'lost'].includes(event.detail)) return;
     show(event.detail, '#' + event.detail);
     resultTimer = setTimeout(() => {
       show('final', '#final');
-      resultTimer = setTimeout(() => show('thanks', '#thanks'), FINAL_DURATION_MS);
+      const { restantes, mejor } = intentos();
+      if (restantes > 0) {
+        // Le quedan intentos: se ofrece jugar de nuevo (cuenta el mejor puntaje).
+        retryInfo.textContent = (mejor === null ? '' : 'Mejor puntaje: ' + mejor + ' · ') + (restantes === 1 ? 'te queda 1 intento' : 'quedan ' + restantes + ' intentos');
+        retry.hidden = false;
+        retryPlay.focus({ preventScroll: true });
+        resultTimer = setTimeout(() => show('thanks', '#thanks'), RETRY_WAIT_MS);
+      } else {
+        retry.hidden = true;
+        resultTimer = setTimeout(() => show('thanks', '#thanks'), FINAL_DURATION_MS);
+      }
     }, RESULT_DURATION_MS);
   });
   function returnToStart() {

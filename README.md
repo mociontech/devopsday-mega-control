@@ -34,8 +34,15 @@ El juego solo conoce `window.PlayerService` y tres eventos; todo lo demás está
 - **Puntaje:** los puntos del juego (10 por objeto, máx. 130) se escalan a **0–100** (`escalarPuntaje`), para pesar igual
   que las demás experiencias en el ranking global. En `detalles` también viajan: ganó, puntos del juego, objetos y tiempo
   restante. Una partida perdida también guarda lo que se alcanzó a recoger.
-- **Una sola partida, un solo puntaje:** el control gigante lo manejan dos personas, pero cuenta como una participación
-  (un ID). El tope es 100 en la app y en la base.
+- **3 intentos por persona; cuenta el mejor puntaje.** El control gigante lo manejan dos personas y eso cuenta como una
+  participación (un ID). Al terminar una partida, si quedan intentos, la pantalla final ofrece **Jugar de nuevo**
+  (Enter o Espacio) o **Terminar** (Escape); sin tocar nada se da por terminado a los 25 s. La pantalla de agradecimiento
+  muestra el MEJOR puntaje. Cada partida se guarda con su propia clave: un reintento de red no gasta otro intento.
+- **Evius** recibe el mejor puntaje **una sola vez**: al terminar los 3 intentos o tras 10 minutos sin jugar.
+  (Si juega después de ese envío con un puntaje mayor, la base lo guarda pero Evius ya no se actualiza.)
+- Quien ya usó sus 3 intentos ve «Ya usaste tus 3 intentos en esta experiencia».
+
+**Requiere** la migración `backend/supabase/migrations/20261023_004_intentos.sql` (intentos, partidas y mejor puntaje).
 
 ## Servidor propio (`server/`)
 

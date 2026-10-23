@@ -93,7 +93,7 @@ export async function responder(req: Request, ctx: Contexto = {}): Promise<Respo
       // Aviso de capacidad: 1.000.000 de combinaciones (000-000 a 999-999).
       if ((p.usados ?? 0) > 500_000) console.warn(`IDs usados: ${p.usados} de 1000000 (>50%)`);
       enviarEvius();
-      return json(201, { id: p.id, nombre: p.nombre, existente: p.existente });
+      return json(201, { id: p.id, nombre: p.nombre, existente: p.existente, intentosRestantes: p.intentosRestantes, mejor: p.mejor });
     }
 
     // GET /participante/:id  (acceso rápido)
@@ -103,7 +103,7 @@ export async function responder(req: Request, ctx: Contexto = {}): Promise<Respo
       const p = await entrar(id);
       if (!p) return fallo(404, "no_encontrado", "No encontramos ese ID. Revísalo e inténtalo de nuevo.");
       enviarEvius();
-      return json(200, { id, nombre: p.nombre, lienzo: p.lienzo, jugado: p.jugado });
+      return json(200, { id, nombre: p.nombre, lienzo: p.lienzo, jugado: p.jugado, intentosRestantes: p.intentosRestantes, mejor: p.mejor });
     }
 
     // POST /participacion
@@ -123,10 +123,11 @@ export async function responder(req: Request, ctx: Contexto = {}): Promise<Respo
         const puntaje = Number(b.puntaje);
         if (!Number.isInteger(puntaje) || puntaje < 0 || puntaje > 100) return fallo(400, "solicitud", "Puntaje no válido.");
         const d = b.detalles && typeof b.detalles === "object" ? (b.detalles as Record<string, unknown>) : {};
-        const r = await guardarResultado(id, puntaje, detallesDe(d));
+        const clave = limpiar(b.clave, 80);
+        const r = await guardarResultado(id, puntaje, detallesDe(d), clave || undefined);
         if (!r) return fallo(404, "no_encontrado", "No hay participación para ese ID.");
         enviarEvius();
-        return json(200, { ok: true, guardado: r.guardado });
+        return json(200, { ok: true, guardado: r.guardado, intentosRestantes: r.intentosRestantes, mejor: r.mejor });
       }
 
       return fallo(400, "solicitud", "Datos no válidos.");

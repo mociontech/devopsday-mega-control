@@ -16,10 +16,14 @@ export const MSG_RED = "No hay conexión con el servidor. Revisa internet e int�
 export interface Persona {
   id: string;
   nombre: string;
+  /** Intentos que le quedan (Mega Control da 3; cuenta el mejor puntaje). */
+  intentosRestantes: number;
+  /** Su mejor puntaje hasta ahora, o null si aún no ha jugado. */
+  mejor: number | null;
 }
 
 export interface PersonaConsultada extends Persona {
-  /** Ya terminó una partida de Mega Control: no puede repetir. */
+  /** Ya usó sus 3 intentos de Mega Control: no puede repetir. */
   jugado: boolean;
 }
 
@@ -35,6 +39,8 @@ export interface Resultado {
   /** 0-100, entero (los puntos del juego, escalados). */
   puntaje: number;
   detalles: Record<string, number>;
+  /** Identifica esta partida: reenviarla (respuesta perdida) no gasta otro intento. */
+  clave?: string;
 }
 
 export class ErrorApi extends Error {
@@ -85,22 +91,22 @@ export const Registros = {
   async guardar(datos: DatosRegistro): Promise<Persona> {
     const huella = JSON.stringify(datos);
     if (!envio || envio.huella !== huella) envio = { huella, idem: crypto.randomUUID() };
-    const r = await pedir<Persona>("/registrar", { ...datos, idem: envio.idem });
+    const r = await pedir<Partial<Persona> & { id: string; nombre: string }>("/registrar", { ...datos, idem: envio.idem });
     envio = null;
-    return { id: r.id, nombre: r.nombre };
+    return { id: r.id, nombre: r.nombre, intentosRestantes: r.intentosRestantes ?? 3, mejor: r.mejor ?? null };
   },
 
   async buscarPorId(id: string): Promise<PersonaConsultada | null> {
     try {
-      const r = await pedir<{ id: string; nombre: string; jugado?: boolean }>(`/participante/${encodeURIComponent(id)}`);
-      return { id: r.id, nombre: r.nombre, jugado: r.jugado === true };
+      const r = await pedir<{ id: string; nombre: string; jugado?: boolean; intentosRestantes?: number; mejor?: number | null }>(`/participante/${encodeURIComponent(id)}`);
+      return { id: r.id, nombre: r.nombre, jugado: r.jugado === true, intentosRestantes: r.intentosRestantes ?? 3, mejor: r.mejor ?? null };
     } catch (e) {
       if (e instanceof ErrorApi && e.codigo === "no_encontrado") return null;
       throw e;
     }
   },
 
-  /** Idempotente en el servidor: solo cuenta la primera vez, así que reintentar es seguro. */
+  /** Idempotente en el servidor por `clave`: reintentar la misma partida no gasta otro intento. */
   async guardarResultado(resultado: Resultado): Promise<void> {
     await pedir("/participacion", resultado);
   },

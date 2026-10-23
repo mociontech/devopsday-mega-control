@@ -8,6 +8,9 @@ const RETRY_DELAYS_MS = [1000, 2000, 4000, 8000] as const; // 4 esperas -> 5 int
  */
 const POLL_INTERVAL_MS = 20_000;
 
+/** Cada partida se identifica por su clave (una persona puede tener hasta 3 pendientes a la vez). */
+const llave = (r: Resultado) => r.clave ?? r.id;
+
 function readOutbox(): Resultado[] {
   try {
     const raw = localStorage.getItem(OUTBOX_KEY);
@@ -31,7 +34,7 @@ function writeOutbox(entries: Resultado[]): void {
  */
 export function enqueueResultado(resultado: Resultado): void {
   const outbox = readOutbox();
-  if (!outbox.some((entry) => entry.id === resultado.id)) writeOutbox([...outbox, resultado]);
+  if (!outbox.some((entry) => llave(entry) === llave(resultado))) writeOutbox([...outbox, resultado]);
   void flushOutbox();
 }
 
@@ -60,7 +63,7 @@ export async function flushOutbox(): Promise<void> {
   isFlushing = true;
   try {
     for (const resultado of readOutbox()) {
-      if (await sendWithRetries(resultado)) writeOutbox(readOutbox().filter((e) => e.id !== resultado.id));
+      if (await sendWithRetries(resultado)) writeOutbox(readOutbox().filter((e) => llave(e) !== llave(resultado)));
     }
   } finally {
     isFlushing = false;
