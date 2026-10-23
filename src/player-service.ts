@@ -77,9 +77,12 @@ export function instalarPlayerService(): void {
   document.addEventListener("megacontrol:result", (event) => {
     const r = (event as CustomEvent<ResultadoJuego>).detail;
     const puntaje = escalarPuntaje(r.score, r.maxScore);
-    // Pantalla final: el mismo puntaje que se guarda (la imagen trae un "130 puntos" fijo que la pantalla tapa).
+    // Pantallas final y de agradecimiento: el mismo puntaje que se guarda (las imágenes traen un "130 puntos" fijo que se tapa).
+    const texto = `${puntaje} ${puntaje === 1 ? "punto" : "puntos"}`;
     const marcador = document.getElementById("final-score");
-    if (marcador) marcador.textContent = `${puntaje} ${puntaje === 1 ? "punto" : "puntos"}`;
+    if (marcador) marcador.textContent = texto;
+    const gracias = document.getElementById("thanks-score");
+    if (gracias) gracias.textContent = texto.toUpperCase();
     if (!jugador) return;
     const { id } = jugador;
 

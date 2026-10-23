@@ -67,3 +67,7 @@ button:focus-visible { outline: 3px solid #167e95; outline-offset: 3px; }
 .final-score { position: absolute; left: 58.333cqw; top: 30.729cqw; width: 27.865cqw; height: 9.479cqw; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ff006b; color: #fff; font-family: "Figtree", "Inter", system-ui, sans-serif; font-size: 4.7cqw; line-height: 1; text-align: center; }
 .final-score-title { font-weight: 800; }
 .final-score #final-score { font-weight: 500; }
+
+/* Pantalla de agradecimiento: tapa el "130 PUNTOS" pintado en la imagen (recuadro de 585-1350 × 597-783 px en 1920×1080) y
+   escribe el puntaje real con el mismo gris y tipografía. Medidas en cqw (1px de la imagen = 100/1920 cqw). */
+.thanks-score { position: absolute; left: 31.25cqw; top: 31.875cqw; width: 38.281cqw; height: 8.229cqw; margin: 0; display: flex; align-items: center; justify-content: center; background: #f1f1f1; color: #9fa3a4; font-family: "Roboto", "Inter", system-ui, sans-serif; font-weight: 700; font-size: 6.3cqw; line-height: 1; text-transform: uppercase; white-space: nowrap; }

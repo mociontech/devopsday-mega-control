@@ -93,7 +93,11 @@
       </div>
     </section>
     <section id="thanks" class="journey-screen" aria-label="Gracias por participar. Presiona cualquier tecla para volver al inicio." tabindex="-1" hidden>
-      <div class="screen-art"><img src="/images/GraciasPorParticipar.webp" alt="¡Gracias por participar!" draggable="false"></div>
+      <div class="screen-art">
+        <img src="/images/GraciasPorParticipar.webp" alt="¡Gracias por participar!" draggable="false">
+        <!-- La imagen trae pintado "130 PUNTOS" dentro del recuadro: este bloque lo tapa y muestra el puntaje real. -->
+        <p class="thanks-score" aria-live="polite"><span id="thanks-score">0 PUNTOS</span></p>
+      </div>
     </section>
   </main>
 </body>
