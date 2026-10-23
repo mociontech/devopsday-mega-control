@@ -89,7 +89,11 @@ export async function responder(req: Request, ctx: Contexto = {}): Promise<Respo
       if (!v.datos) return fallo(422, v.error!, v.mensaje!);
 
       const p = await registrar(v.datos);
-      if (p.jugado) return fallo(409, "ya_participo", "Parece que ya participaste en esta experiencia. ¡Gracias!");
+      if (p.jugado) {
+        return fallo(409, "ya_participo", EXPERIENCIA === "mega"
+          ? "Ya usaste tus 3 intentos en esta experiencia. ¡Gracias por participar!"
+          : "Parece que ya participaste en esta experiencia. ¡Gracias!");
+      }
       // Aviso de capacidad: 1.000.000 de combinaciones (000-000 a 999-999).
       if ((p.usados ?? 0) > 500_000) console.warn(`IDs usados: ${p.usados} de 1000000 (>50%)`);
       enviarEvius();
